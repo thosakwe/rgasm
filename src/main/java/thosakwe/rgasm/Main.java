@@ -20,6 +20,7 @@ public class Main {
         Options options = new Options();
         options.addOption("d", "debug", false, "Print debug output.");
         options.addOption("o", "out", true, "The output file to write to.");
+        options.addOption("x", "run", false, "RUn the generated RinGy code on compilation.");
 
         if (args.length == 0 || args[0].equals("-h") || args[0].equals("--help")) {
             new HelpFormatter().printHelp("rgasm [options...] <file>", options);
@@ -45,7 +46,7 @@ public class Main {
             output = new PrintStream(file);
         } else output = System.out;
 
-        if (cliArgs.length == 0) {
+        if (cli.getOptionValue('o') == null) {
             System.err.println("fatal error: no input file");
             System.exit(1);
         }
@@ -63,5 +64,36 @@ public class Main {
 
         RyCompiler ryCompiler = new RyCompiler(output);
         ParseTreeWalker.DEFAULT.walk(ryCompiler, program);
+
+        if (cli.hasOption("run") && cli.getOptionValue('o') != null) {
+            System.out.println();
+            System.out.println("VM Output:");
+            System.out.println();
+
+            Process ry = Runtime.getRuntime().exec(new String[]{
+                    "ry",
+                    cli.getOptionValue('o')
+            });
+
+            String line;
+
+            BufferedReader input =
+                    new BufferedReader
+                            (new InputStreamReader(ry.getInputStream()));
+            while ((line = input.readLine()) != null) {
+                System.out.println(line);
+            }
+
+            input.close();
+
+            input =
+                    new BufferedReader
+                            (new InputStreamReader(ry.getErrorStream()));
+            while ((line = input.readLine()) != null) {
+                System.err.println(line);
+            }
+
+            input.close();
+        }
     }
 }
